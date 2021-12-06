@@ -23,7 +23,7 @@ import com.ebay.rtran.maven.util.MavenModelUtil._
 import com.ebay.rtran.maven.util.MavenUtil
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.commons.lang3.StringUtils
-import org.apache.maven.model.io.jdom.MavenJDOMWriter
+import org.apache.maven.model.io.jdom.MavenJDOMWriter2
 import org.apache.maven.model.io.xpp3.{MavenXpp3Reader, MavenXpp3Writer}
 import org.apache.maven.model.{Dependency, Model, Plugin}
 import org.eclipse.aether.artifact.DefaultArtifact
@@ -198,7 +198,7 @@ class MultiModuleMavenModelProvider extends IModelProvider[MultiModuleMavenModel
 
       val format = Format.getRawFormat.setEncoding(encoding).setTextMode(TextMode.PRESERVE).setLineSeparator(separator)
       val outWriter = new StringWriter()
-      new MavenJDOMWriter().setExpandEmptyElements(true).write(module.pomModel, doc, outWriter, format)
+      new MavenJDOMWriter2().setExpandEmptyElements(true).write(module.pomModel, doc, outWriter, format)
       //new MavenXpp3Writer().write(new FileWriter("aa"), module.pomModel)
 
       val updatedContent = outWriter.toString
