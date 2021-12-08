@@ -169,6 +169,7 @@ public class MavenJDOMWriter2
         {
             final Iterator it = list.iterator();
             Iterator elIt = element.getChildren( childTag, element.getNamespace() ).iterator();
+            int elItCounter = 0;
             if ( !elIt.hasNext() )
             {
                 elIt = null;
@@ -181,6 +182,7 @@ public class MavenJDOMWriter2
                 if ( elIt != null && elIt.hasNext() )
                 {
                     el = (Element) elIt.next();
+                    elItCounter++;
                     if ( !elIt.hasNext() )
                     {
                         elIt = null;
@@ -191,7 +193,7 @@ public class MavenJDOMWriter2
                     el = factory.element( childTag, element.getNamespace() );
                     insertAtPreferredLocation( element, el, innerCount );
                 }
-                populateDepIfExist(value, childTag, element, el);
+                populateDepIfExist(value, childTag, element, el, elItCounter);
                 updateDependency( value, childTag, innerCount, el );
                 innerCount.increaseCount();
             }
@@ -213,10 +215,15 @@ public class MavenJDOMWriter2
      * @param parent dependencies element
      * @param targetEle the element which is writing to
      */
-    private void populateDepIfExist(Dependency dep, String childTag,Element parent, Element targetEle) {
+    private void populateDepIfExist(Dependency dep, String childTag,Element parent, Element targetEle, int targetCounter) {
         Iterator elIt = parent.getChildren(childTag, parent.getNamespace() ).iterator();
+        int counter = 0;
         while (elIt.hasNext()) {
             Element el = (Element) elIt.next();
+            counter++;
+            if (counter < targetCounter) {
+                continue;
+            }
             if (dep.getArtifactId() != null && dep.getGroupId() != null) {
                 Element artifactEl = el.getChild("artifactId", el.getNamespace());
                 Element groupEl = el.getChild("groupId", el.getNamespace());
@@ -224,7 +231,7 @@ public class MavenJDOMWriter2
                         && dep.getArtifactId().equals(artifactEl.getText())
                         && dep.getGroupId().equals(groupEl.getText())) {
                     targetEle.setContent(el.cloneContent());
-
+                    break;
                 }
             }
         }
