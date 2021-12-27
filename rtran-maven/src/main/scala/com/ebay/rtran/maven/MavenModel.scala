@@ -32,6 +32,7 @@ import org.jdom2.output.Format
 import org.jdom2.output.Format.TextMode
 
 import scala.collection.JavaConversions._
+import scala.collection.immutable.ListMap
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
@@ -83,10 +84,10 @@ case class MavenModel(pomFile: File, pomModel: Model) {
   def managedDependencies: Map[String, Dependency] = {
     implicit val properties = this.properties
 
-    var result = parent.map(_.managedDependencies).getOrElse(Map.empty) ++
-      Option(pomModel.getDependencyManagement)
-        .map(_.getDependencies.map(resolve).map(dep => dep.getManagementKey -> dep).toMap)
-        .getOrElse(Map.empty)
+    var result = parent.map(_.managedDependencies).getOrElse(ListMap.empty) ++
+      ListMap(Option(pomModel.getDependencyManagement)
+        .map(_.getDependencies.map(resolve).map(dep => dep.getManagementKey -> dep))
+        .getOrElse(List.empty):_*)
 
     val imports = result.values.toList.filter(dep => dep.getScope == "import" && dep.getType == "pom")
     imports foreach { dep =>
