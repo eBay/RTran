@@ -37,9 +37,10 @@ class MavenRemoveDependenciesRule(ruleConfig: MavenRemoveDependenciesRuleConfig)
         case None => true
       }
     } foreach { module =>
+      val resolvedDeps = module.resolvedDependencies
       (for {
         toBeRemoved <- ruleConfig.dependencies
-        resolvedDep <- module.resolvedDependencies
+        resolvedDep <- resolvedDeps
         dep <- module.pomModel.getDependencies
         if (toBeRemoved matches resolvedDep) && (resolvedDep.key == dep.key)
       } yield dep) foreach { dep =>

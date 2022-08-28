@@ -34,8 +34,9 @@ class MavenDependenciesMappingRule(ruleConfig: MavenDependenciesMappingRuleConfi
         case None => true
       }
     } foreach { module =>
+      val resolvedDeps = module.resolvedDependencies
       val matches = for {
-        dep <- module.resolvedDependencies
+        dep <- resolvedDeps
         from <- ruleConfig.from
         if from matches dep
       } yield dep

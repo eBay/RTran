@@ -18,10 +18,10 @@ package com.ebay.rtran.maven.util
 
 import java.io.File
 import java.util
-import java.util.Collections
-
+import java.util.{Base64, Collections}
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.maven.repository.internal._
 import org.apache.maven.{model => maven}
 import org.eclipse.aether.artifact.{Artifact, ArtifactProperties, DefaultArtifact, DefaultArtifactType}
@@ -29,7 +29,7 @@ import org.eclipse.aether.collection.{CollectRequest, DependencyCollectionExcept
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory
 import org.eclipse.aether.graph._
 import org.eclipse.aether.impl.DefaultServiceLocator
-import org.eclipse.aether.repository.{LocalRepository, RemoteRepository}
+import org.eclipse.aether.repository.{Authentication, LocalRepository, RemoteRepository}
 import org.eclipse.aether.resolution.{ArtifactRequest, VersionRangeRequest, VersionRequest}
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory
 import org.eclipse.aether.spi.connector.transport.TransporterFactory
@@ -37,6 +37,7 @@ import org.eclipse.aether.transport.file.FileTransporterFactory
 import org.eclipse.aether.transport.http.HttpTransporterFactory
 import org.eclipse.aether.util.filter.ExclusionsDependencyFilter
 import org.eclipse.aether.util.graph.visitor.{FilteringDependencyVisitor, TreeDependencyVisitor}
+import org.eclipse.aether.util.repository.AuthenticationBuilder
 import org.eclipse.aether.{RepositorySystem, RepositorySystemSession, repository => aether}
 
 import scala.collection.JavaConversions._
@@ -49,7 +50,7 @@ object MavenUtil {
   private val DEFAULT = "default"
 
   private lazy val DEFAULT_REPOSITORY_REMOTE = new RemoteRepository.Builder("central", DEFAULT,
-    "http://repo1.maven.org/maven2").build()
+    "https://repo1.maven.org/maven2").build()
 
   lazy val repositorySystem = {
     val locator = MavenRepositorySystemUtils.newServiceLocator
@@ -79,24 +80,30 @@ object MavenUtil {
       } else {
         (new aether.RepositoryPolicy(true, policyRelease, ""), new aether.RepositoryPolicy(false, policySnapshot, ""))
       }
-      if(key =="maven_central_mirror"){
-        new RemoteRepository.Builder(key, DEFAULT, url)
-          .setReleasePolicy(releasePolicy)
-          .setSnapshotPolicy(snapshotPolicy)
-          .setMirroredRepositories(List(DEFAULT_REPOSITORY_REMOTE))
-          .build
-      }else{
-        new RemoteRepository.Builder(key, DEFAULT, url)
-          .setReleasePolicy(releasePolicy)
-          .setSnapshotPolicy(snapshotPolicy)
-          .build
+
+      val builder: RemoteRepository.Builder =  new RemoteRepository.Builder(key, DEFAULT, url)
+        .setReleasePolicy(releasePolicy)
+        .setSnapshotPolicy(snapshotPolicy)
+
+      if (key == "maven_central_mirror") {
+        builder.setMirroredRepositories(List(DEFAULT_REPOSITORY_REMOTE))
       }
+
+      if (key != "maven_central") {
+        Option(auth) match {
+          case Some(au) =>
+            builder.setAuthentication(new AuthenticationBuilder().addUsername(StringUtils.substringBefore(au, ":")).addPassword(StringUtils.substringAfter(au, ":")).build())
+        }
+      }
+      builder.build()
     } toList
   }
 
 
   private[maven] lazy val localRepository = if (config.hasPath("local-repository-full-path")) new File(config.getString("local-repository-full-path")) else new File(System.getProperty("user.dir"), config.getString("local-repository"))
   println(localRepository.getAbsolutePath)
+
+  private[maven] lazy val auth = if (config.hasPath("remote-repositories-bau")) new String(Base64.getDecoder().decode(config.getString("remote-repositories-bau"))) else null
 
 
   def repositorySystemSession: RepositorySystemSession = {

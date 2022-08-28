@@ -35,8 +35,9 @@ class MavenAddDependenciesRule(ruleConfig: MavenAddDependenciesRuleConfig)
         case None => true
       }
     } foreach { module =>
+      val resolvedDeps = module.resolvedDependencies
       ruleConfig.dependencies filterNot {dep =>
-        module.resolvedDependencies.exists(_.key == dep.key)
+        resolvedDeps.exists(_.key == dep.key)
       } foreach {dep =>
         logger.info("{} added dependency {} to {}", id, dep, module.pomFile)
         module.pomModel.addDependency(dep)
