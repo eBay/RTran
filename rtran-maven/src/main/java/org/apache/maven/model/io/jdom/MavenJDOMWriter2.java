@@ -169,6 +169,7 @@ public class MavenJDOMWriter2
         {
             final Iterator it = list.iterator();
             Iterator elIt = element.getChildren( childTag, element.getNamespace() ).iterator();
+            Map<String, Comment> dependencyCommentMap = assembleMap(element);
             int elItCounter = 0;
             if ( !elIt.hasNext() )
             {
@@ -205,8 +206,153 @@ public class MavenJDOMWriter2
                     elIt.remove();
                 }
             }
+            processComment(element, dependencyCommentMap, childTag, innerCount);
         }
     } // -- void iterateDependency( Counter, Element, java.util.Collection, java.lang.String, java.lang.String )
+
+    /**
+     * assemble Dependency-Comment map by user's pom file
+     * @param element
+     * @return
+     */
+    private Map<String, Comment> assembleMap(Element element) {
+        Element root = element;
+        int size = root.getContentSize();
+        List<Content> sourceList = root.getContent();
+        List<Content> destList = new ArrayList<>();
+        Map<String, Comment> ret = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            if (sourceList.get(i).getCType() == Content.CType.Element || sourceList.get(i).getCType() == Content.CType.Comment) {
+                destList.add(sourceList.get(i));
+            }
+        }
+        for (int j = 1; j < destList.size(); j++) {
+            if (destList.get(j).getCType() == Content.CType.Element && destList.get(j - 1).getCType() == Content.CType.Comment) {
+                Element keyElement = (Element) destList.get(j);
+                Element artifactEl = keyElement.getChild("artifactId", keyElement.getNamespace());
+                Element groupEl = keyElement.getChild("groupId", keyElement.getNamespace());
+                String key = artifactEl.getText() + "::" + groupEl.getText();
+                Comment val = (Comment) destList.get(j - 1);
+                ret.put(key, val);
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * process comment for dependency
+     * @param element dependencies element
+     * @param map dependency comment map in
+     * @param childTag target element tag
+     * @param counter tag depth
+     */
+    private void processComment(Element element, Map<String, Comment> map, String childTag, IndentationCounter counter) {
+        List<Element> dependencyElements = element.getChildren(childTag, element.getNamespace());
+        int size = dependencyElements.size();
+        for (int i = 0; i < size; i++) {
+            Element target = dependencyElements.get(i);
+            Comment existComment = findNearestComment(element, target);
+            Comment comment = getOriginalComment(map, target);
+            if (existComment != null) {
+                if (comment != null) {
+                    if (existComment.getText().equals(comment.getText())) {
+                        continue;
+                    } else {
+                        existComment.setText(comment.getText());
+                    }
+                } else {
+                    removeExistComment(element, existComment);
+                }
+            } else {
+                if (comment == null) {
+                    continue;
+                } else {
+                    insertCommentAtPreferredLocation(element, counter);
+                }
+            }
+        }
+    }
+
+    /**
+     * find Comment for target Dependency after update completed
+     * @param element
+     * @param target
+     * @return
+     */
+    private Comment findNearestComment(Element element, Element target) {
+        Comment existComment = null;
+        int index = element.indexOf(target);
+        if (index <= 0) {
+            return existComment;
+        }
+        int j = index - 1;
+        while (j >= 0) {
+            Content previous = element.getContent(j);
+            if (previous instanceof Text) {
+                final Text txt = (Text) previous;
+                if (txt.getTextTrim().length() == 0) {
+                    j--;
+                }
+            } else if (previous instanceof Comment) {
+                existComment = (Comment) previous;
+                break;
+            } else {
+                break;
+            }
+        }
+        return existComment;
+    }
+
+    /**
+     * find Original Comment for target Dependency from user's pom file
+     * @param map
+     * @param target
+     * @return
+     */
+    private Comment getOriginalComment(Map<String, Comment> map, Element target) {
+        for (Map.Entry<String, Comment> entry : map.entrySet()) {
+            String key = entry.getKey();
+            String[] keyArray = key.split("::");
+            if (keyArray.length != 2) {
+                continue;
+            }
+            String artifactEl = keyArray[0];
+            String groupEl = keyArray[1];
+            Element artifactTargetEl = target.getChild("artifactId", target.getNamespace());
+            Element groupTargetEl = target.getChild("groupId", target.getNamespace());
+            if (artifactEl != null && groupEl != null && artifactEl.equals(artifactTargetEl.getText())
+                    && groupEl.equals(groupTargetEl.getText())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void removeExistComment(Element element, Comment existComment) {
+        final int existIndex = element.indexOf(existComment);
+        if (existIndex > 0) {
+            final Content previous = element.getContent(existIndex - 1);
+            if (previous instanceof Text) {
+                final Text txt = (Text) previous;
+                if (txt.getTextTrim().length() == 0) {
+                    element.removeContent(txt);
+                }
+            }
+        }
+        element.removeContent(existComment);
+    }
+
+    private void insertCommentAtPreferredLocation(Element element, IndentationCounter counter) {
+        String indent = WriterUtils2.deduceIndent(element, counter);
+        String starter = "\n";
+        for (int tem = 0; tem < counter.getDepth(); tem++) {
+            starter = starter + indent; // TODO make settable?
+        }
+        Text lastText = factory.text(starter);
+        int index = element.indexOf(target);
+        element.addContent(index, factory.comment(comment.getText()));
+        element.addContent(index + 1, lastText);
+    }
 
     /***
      * If the dependency already exists in doc, will clone the content to the target element, to avoid format issue
