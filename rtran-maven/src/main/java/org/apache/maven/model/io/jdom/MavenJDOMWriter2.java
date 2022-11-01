@@ -236,15 +236,18 @@ public class MavenJDOMWriter2
                     Element keyElement = (Element) destList.get(j);
                     Element artifactEl = keyElement.getChild("artifactId", keyElement.getNamespace());
                     Element groupEl = keyElement.getChild("groupId", keyElement.getNamespace());
-                    String key = artifactEl.getText() + "::" + groupEl.getText();
-                    Comment val = (Comment) destList.get(j - 1);
-                    ret.put(key, val);
+                    if (artifactEl != null && groupEl != null) {
+                        String key = artifactEl.getText() + "::" + groupEl.getText();
+                        Comment val = (Comment) destList.get(j - 1);
+                        ret.put(key, val);
+                    }
                 }
             }
+            return ret;
         } catch (Exception e) {
             System.out.println("assemble map failed");
+            return null;
         }
-        return ret;
     }
 
     /**
@@ -255,6 +258,9 @@ public class MavenJDOMWriter2
      * @param counter tag depth
      */
     private void processComment(Element element, Map<String, Comment> map, String childTag, IndentationCounter counter) {
+        if (map == null || map.size() == 0) {
+            return;
+        }
         List<Element> dependencyElements = element.getChildren(childTag, element.getNamespace());
         int size = dependencyElements.size();
         for (int i = 0; i < size; i++) {
