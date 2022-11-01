@@ -206,7 +206,11 @@ public class MavenJDOMWriter2
                     elIt.remove();
                 }
             }
-            processComment(element, dependencyCommentMap, childTag, innerCount);
+            try {
+                processComment(element, dependencyCommentMap, childTag, innerCount);
+            } catch (Exception e) {
+                System.out.println("Comment process failed");
+            }
         }
     } // -- void iterateDependency( Counter, Element, java.util.Collection, java.lang.String, java.lang.String )
 
@@ -221,20 +225,24 @@ public class MavenJDOMWriter2
         List<Content> sourceList = root.getContent();
         List<Content> destList = new ArrayList<>();
         Map<String, Comment> ret = new HashMap<>();
-        for (int i = 0; i < size; i++) {
-            if (sourceList.get(i).getCType() == Content.CType.Element || sourceList.get(i).getCType() == Content.CType.Comment) {
-                destList.add(sourceList.get(i));
+        try {
+            for (int i = 0; i < size; i++) {
+                if (sourceList.get(i).getCType() == Content.CType.Element || sourceList.get(i).getCType() == Content.CType.Comment) {
+                    destList.add(sourceList.get(i));
+                }
             }
-        }
-        for (int j = 1; j < destList.size(); j++) {
-            if (destList.get(j).getCType() == Content.CType.Element && destList.get(j - 1).getCType() == Content.CType.Comment) {
-                Element keyElement = (Element) destList.get(j);
-                Element artifactEl = keyElement.getChild("artifactId", keyElement.getNamespace());
-                Element groupEl = keyElement.getChild("groupId", keyElement.getNamespace());
-                String key = artifactEl.getText() + "::" + groupEl.getText();
-                Comment val = (Comment) destList.get(j - 1);
-                ret.put(key, val);
+            for (int j = 1; j < destList.size(); j++) {
+                if (destList.get(j).getCType() == Content.CType.Element && destList.get(j - 1).getCType() == Content.CType.Comment) {
+                    Element keyElement = (Element) destList.get(j);
+                    Element artifactEl = keyElement.getChild("artifactId", keyElement.getNamespace());
+                    Element groupEl = keyElement.getChild("groupId", keyElement.getNamespace());
+                    String key = artifactEl.getText() + "::" + groupEl.getText();
+                    Comment val = (Comment) destList.get(j - 1);
+                    ret.put(key, val);
+                }
             }
+        } catch (Exception e) {
+            System.out.println("assemble map failed");
         }
         return ret;
     }
