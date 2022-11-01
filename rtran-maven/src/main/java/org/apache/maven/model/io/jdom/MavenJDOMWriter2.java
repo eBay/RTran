@@ -234,10 +234,8 @@ public class MavenJDOMWriter2
             for (int j = 1; j < destList.size(); j++) {
                 if (destList.get(j).getCType() == Content.CType.Element && destList.get(j - 1).getCType() == Content.CType.Comment) {
                     Element keyElement = (Element) destList.get(j);
-                    Element artifactEl = keyElement.getChild("artifactId", keyElement.getNamespace());
-                    Element groupEl = keyElement.getChild("groupId", keyElement.getNamespace());
-                    if (artifactEl != null && groupEl != null) {
-                        String key = artifactEl.getText() + "::" + groupEl.getText();
+                    String key = createKeyByGA(keyElement);
+                    if (key != null && !key.isEmpty()) {
                         Comment val = (Comment) destList.get(j - 1);
                         ret.put(key, val);
                     }
@@ -324,22 +322,17 @@ public class MavenJDOMWriter2
      * @return
      */
     private Comment getOriginalComment(Map<String, Comment> map, Element target) {
-        for (Map.Entry<String, Comment> entry : map.entrySet()) {
-            String key = entry.getKey();
-            String[] keyArray = key.split("::");
-            if (keyArray.length != 2) {
-                continue;
-            }
-            String artifactEl = keyArray[0];
-            String groupEl = keyArray[1];
-            Element artifactTargetEl = target.getChild("artifactId", target.getNamespace());
-            Element groupTargetEl = target.getChild("groupId", target.getNamespace());
-            if (artifactEl != null && groupEl != null && artifactEl.equals(artifactTargetEl.getText())
-                    && groupEl.equals(groupTargetEl.getText())) {
-                return entry.getValue();
-            }
+        String key = createKeyByGA(target);
+        return map.get(key);
+    }
+
+    private String createKeyByGA(Element target) {
+        Element artifactTargetEl = target.getChild("artifactId", target.getNamespace());
+        Element groupTargetEl = target.getChild("groupId", target.getNamespace());
+        if (artifactTargetEl != null && groupTargetEl != null) {
+            return artifactTargetEl.getText() + "::" + groupTargetEl.getText();
         }
-        return null;
+        return "";
     }
 
     private void removeExistComment(Element element, Comment existComment) {
@@ -358,7 +351,7 @@ public class MavenJDOMWriter2
 
     private void insertCommentAtPreferredLocation(Element element, IndentationCounter counter) {
         String indent = WriterUtils2.deduceIndent(element, counter);
-        String starter = "\n";
+        String starter = SystemUtils.LINE_SEPARTOR;
         for (int tem = 0; tem < counter.getDepth(); tem++) {
             starter = starter + indent; // TODO make settable?
         }
