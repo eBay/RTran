@@ -34,8 +34,8 @@
     <!-- Some comments here -->
     <properties>
         <akka.version>2.4.17</akka.version>
-        <aether.version>1.0.2.v20150114</aether.version>
-        <empty.property1></empty.property1>
+        <aether.version>1.1.0</aether.version>
+        <empty.property1/>
         <empty.property2/>
         <empty.property3> </empty.property3>
     </properties>
@@ -86,9 +86,9 @@
                 <version>2.2.1</version>
                 <configuration>
                     <compilerArguments combine.children="inherit">
-                        <Werror />
-                        <Xlint:all >${test}</Xlint:all>
-                        <Xlint:-path />
+                        <Werror/>
+                        <Xlint:all>${test}</Xlint:all>
+                        &lt;Xlint:-path /&gt;
                     </compilerArguments>
                     <argLine>${argLine} -Xverify:none</argLine>
                 </configuration>
@@ -99,8 +99,8 @@
                 <configuration>
                     <other>test</other>
                     <compilerArguments combine.children="append">
-                        <Werror />
-                        <Xlint:-path />
+                        <Werror/>
+                        &lt;Xlint:-path /&gt;
                     </compilerArguments>
                 </configuration>
             </plugin>
