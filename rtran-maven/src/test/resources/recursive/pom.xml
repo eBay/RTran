@@ -33,9 +33,9 @@
     </modules>
     <!-- Some comments here -->
     <properties>
-        <akka.version>2.4.17</akka.version>
+        <akka.version>2.5.32</akka.version>
         <aether.version>1.0.2.v20150114</aether.version>
-        <empty.property1></empty.property1>
+        <empty.property1/>
         <empty.property2/>
         <empty.property3> </empty.property3>
     </properties>
